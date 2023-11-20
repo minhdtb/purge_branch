@@ -31,7 +31,7 @@ runs:
     - name: Triage branches
       working-directory: "${{ github.action_path }}"
       run: |
-        output=$(pipenv run python3 src/purge_branches.py --delete-days inputs.days-to-delete --notify-days inputs.days-to-notify)
+        output=$(pipenv run python3 src/purge_branches.py --days-delete inputs.days-to-delete --days-notify inputs.days-to-notify)
         echo "::set-output name=deleted-branches::$output"
       id: deleted-branches
       shell: bash

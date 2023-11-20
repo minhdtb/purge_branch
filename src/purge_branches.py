@@ -158,9 +158,9 @@ def parse_args():
     parser.add_argument(
         '--slack-token', help='Slack token', default=os.getenv('SLACK_TOKEN'))
     parser.add_argument(
-        '--days-delete', help='Number of days to delete')
+        '--days-delete', type=int, help='Number of days to delete')
     parser.add_argument(
-        '--days-notify', help='Number of days to notify')
+        '--days-notify', type=int, help='Number of days to notify')
     parser.add_argument('--verbose', help='Verbose output', action='store_true')
 
     args = parser.parse_args()

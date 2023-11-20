@@ -1,14 +1,12 @@
-""" Script to find stale branches and notify if delete if they are older than 150 days 
-"""
 import argparse
+import datetime
 import logging
 import os
 import sys
-import datetime
 
 import requests
 
-KEEP_ALIVE_PREFIX = "keep-alive-"
+KEEP_ALIVE_PREFIX = "keep-"
 GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
 GITHUB_API_URL = "https://api.github.com"
 REQUEST_TIMEOUT_SECONDS = 10
@@ -20,14 +18,15 @@ def add_branch_slack_reminders(branch, slack_reminder):
         slack_reminder[branch['target']['author']['email']] = []
     slack_reminder[branch['target']['author']['email']].append(branch['name'])
 
-def delete_branches(args,branches):
+
+def delete_branches(args, branches):
     """Delete branch"""
     for branch in branches:
         logging.info(f"Deleting branch {branch['name']}")
-        url = GITHUB_API_URL+"repos/"+args.gh_repo+"git/refs/"+branch['name']
+        url = GITHUB_API_URL + "/repos/" + args.gh_repo + "/git/refs/heads/" + branch['name']
         headers = {
-        'Accept': 'application/vnd.github.v3+json',
-        'Authorization': f'Bearer {args.gh_token}',
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': f'Bearer {args.gh_token}',
         }
         try:
             response = requests.delete(url, headers=headers)
@@ -35,8 +34,11 @@ def delete_branches(args,branches):
         except requests.exceptions.HTTPError as err:
             logging.error(err)
 
-def grab_all_branches(args, page = "", branches = []) -> str:
-    """Grab all branches from github"""
+
+def grab_all_branches(args, page="", branches=None) -> str:
+    """Grab all branches from GitHub"""
+    if branches is None:
+        branches = []
     repo_owner, repo_name = args.gh_repo.split('/')
     query = """{repository(owner: \"%s\", name: \"%s\") {
         refs(first: 100, refPrefix: \"refs/heads/\"%s) {
@@ -68,8 +70,8 @@ def grab_all_branches(args, page = "", branches = []) -> str:
     }
     }""" % (repo_owner, repo_name, page)
     headers = {
-    'Accept': 'application/vnd.github.v3+json',
-    'Authorization': f'Bearer {args.gh_token}',
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': f'Bearer {args.gh_token}',
     }
     try:
         response = requests.post(GITHUB_GRAPHQL_URL, json={'query': query}, headers=headers)
@@ -84,25 +86,25 @@ def grab_all_branches(args, page = "", branches = []) -> str:
     except requests.exceptions.HTTPError as err:
         logging.error(err)
         sys.exit(1)
-        
+
+
 def triage_branches(args, branches):
     """Triage the branches"""
     branches_to_delete = []
     slack_reminder = {}
-    print(args.days_delete)
-    print(args.days_notify)
     for branch in branches:
         # ignore branches with keep-alive prefix
-        if branch['name'].startswith(KEEP_ALIVE_PREFIX): 
+        if branch['name'].startswith(KEEP_ALIVE_PREFIX):
             continue
         # ignore branches with open PRs
         if branch['associatedPullRequests']['nodes']:
             if branch['associatedPullRequests']['nodes'][0]['state'] == 'OPEN':
                 continue
-        lastBranchCommit = datetime.datetime.strptime(branch['target']['committedDate'], '%Y-%m-%dT%H:%M:%SZ')
-        if lastBranchCommit < datetime.datetime.today() - datetime.timedelta(days=int(args.days_delete)):
+
+        last_branch_commit = datetime.datetime.strptime(branch['target']['committedDate'], '%Y-%m-%dT%H:%M:%SZ')
+        if last_branch_commit < datetime.datetime.today() - datetime.timedelta(days=int(args.days_delete)):
             branches_to_delete.append(branch)
-        elif lastBranchCommit < datetime.datetime.today() - datetime.timedelta(days=int(args.days_notify)):
+        elif last_branch_commit < datetime.datetime.today() - datetime.timedelta(days=int(args.days_notify)):
             email = branch['target']['author']['email']
             if email not in slack_reminder:
                 slack_reminder[email] = []
@@ -113,10 +115,12 @@ def triage_branches(args, branches):
     if slack_reminder:
         send_slack_message(args, slack_reminder)
 
+
 def get_slack_user_id(args, email):
     """Get slack user id"""
     try:
-        response = requests.get("https://slack.com/api/users.lookupByEmail?email="+email, headers={'Authorization': f'Bearer {args.slack_token}'})
+        response = requests.get("https://slack.com/api/users.lookupByEmail?email=" + email,
+                                headers={'Authorization': f'Bearer {args.slack_token}'})
         response.raise_for_status()
         if response.json()['ok']:
             return response.json()['user']['id']
@@ -124,30 +128,39 @@ def get_slack_user_id(args, email):
     except requests.exceptions.HTTPError as err:
         logging.error(err)
 
+
 def send_slack_message(args, slack_reminder):
-    """Send slack message to remind users to delete their branches"""
+    """Send Slack message to remind users to delete their branches"""
     for user_email in slack_reminder.keys():
         try:
             if user_email == "gita@coda.io":
                 slack_user_id = get_slack_user_id(args, user_email)
                 if slack_user_id:
-                    branch_url = "https://github.com/"+args.gh_repo+"/compare/main..."
+                    branch_url = "https://github.com/" + args.gh_repo + "/compare/main..."
                     branches = [branch_url + branch['name'] + '\n' for branch in slack_reminder[user_email]]
-                    delete_branch_msg = "git push origin --delete " + ' '.join([branch['name'] for branch in slack_reminder[user_email]])
-                    message = "Hi! The following branches are more than %s days old:\n%s" % (''.join(branches), args.days_notify)
-                    message+="If you would like to keep the branch alive please rename the branch with the prefix `keep-alive-`.\n"
-                    message+="You can do this by running\n`git push origin origin/old_name:refs/heads/keep-alive-old_name && git push origin :old_name`\n"
-                    message+=f"Otherwise please run `{delete_branch_msg}` to delete the branches.\n"
-                    message+=f"If no action is taken, the {'branch' if len(branches)>1 else 'branches' } will be deleted in another %s days." % (int(args.days_delete)-int(args.days_notify))
+                    delete_branch_msg = "git push origin --delete " + ' '.join(
+                        [branch['name'] for branch in slack_reminder[user_email]])
+                    message = "Hi! The following branches are more than %s days old:\n%s" % (
+                        ''.join(branches), args.days_notify)
+                    message += ("If you would like to keep the branch alive please rename the branch with the prefix "
+                                "`keep-alive-`.\n")
+                    message += ("You can do this by running\n`git push origin "
+                                "origin/old_name:refs/heads/keep-alive-old_name && git push origin :old_name`\n")
+                    message += f"Otherwise please run `{delete_branch_msg}` to delete the branches.\n"
+                    message += (f"If no action is taken, the {'branch' if len(branches) > 1 else 'branches'} will be "
+                                f"deleted in another %s days.") % (
+                            int(args.days_delete) - int(args.days_notify))
                     headers = {'Authorization': f'Bearer {args.slack_token}'}
                     data = {'text': message, 'channel': slack_user_id}
                     res = requests.post(
-                        "https://slack.com/api/chat.postMessage", headers=headers, json=data, timeout=REQUEST_TIMEOUT_SECONDS)
+                        "https://slack.com/api/chat.postMessage", headers=headers, json=data,
+                        timeout=REQUEST_TIMEOUT_SECONDS)
                     res.raise_for_status()
                 else:
                     logging.error(f"Slack user id not found for {user_email}")
         except requests.exceptions.HTTPError as err:
             logging.error(err)
+
 
 def parse_args():
     """Define and parse command line arguments"""

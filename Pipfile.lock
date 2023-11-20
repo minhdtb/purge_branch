@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0e87db669301ed65cd143a5cfa529eaff0c4a1635ea4bf8c45503ad210b735d2"
+            "sha256": "e254a8df8c41f152fd9c52ccb42c89cfb1eebfd1577401a7a6e90ad273cf6aac"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.9.8"
+            "python_version": "3.10.12"
         },
         "sources": [
             {
@@ -18,18 +18,18 @@
     "default": {
         "certifi": {
             "hashes": [
-                "sha256:0d9c601124e5a6ba9712dbc60d9c53c21e34f5f641fe83002317394311bdce14",
-                "sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382"
+                "sha256:9b469f3a900bf28dc19b8cfbf8019bf47f7fdd1a65a1d4ffb98fc14166beb4d1",
+                "sha256:e036ab49d5b79556f99cfc2d9320b34cfbe5be05c5871b51de9329f0603b0474"
             ],
             "markers": "python_version >= '3.6'",
-            "version": "==2022.9.24"
+            "version": "==2023.11.17"
         },
         "charset-normalizer": {
             "hashes": [
                 "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845",
                 "sha256:83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f"
             ],
-            "markers": "python_version >= '3.6'",
+            "markers": "python_full_version >= '3.6.0'",
             "version": "==2.1.1"
         },
         "idna": {
@@ -65,11 +65,11 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:3fa96cf423e6987997fc326ae8df396db2a8b7c667747d47ddd8ecba91f4a74e",
-                "sha256:b930dd878d5a8afb066a637fbb35144fe7901e3b209d1cd4f524bd0e9deee997"
+                "sha256:34b97092d7e0a3a8cf7cd10e386f401b3737364026c45e622aa02903dffe0f07",
+                "sha256:f8ecc1bba5667413457c529ab955bf8c67b45db799d159066261719e328580a0"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5' and python_version < '4'",
-            "version": "==1.26.12"
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
+            "version": "==1.26.18"
         }
     },
     "develop": {}

@@ -89,7 +89,8 @@ def triage_branches(args, branches):
     """Triage the branches"""
     branches_to_delete = []
     slack_reminder = {}
-
+    print(args.days_delete)
+    print(args.days_notify)
     for branch in branches:
         # ignore branches with keep-alive prefix
         if branch['name'].startswith(KEEP_ALIVE_PREFIX): 

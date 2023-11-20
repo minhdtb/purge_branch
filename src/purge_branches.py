@@ -99,9 +99,9 @@ def triage_branches(args, branches):
             if branch['associatedPullRequests']['nodes'][0]['state'] == 'OPEN':
                 continue
         lastBranchCommit = datetime.datetime.strptime(branch['target']['committedDate'], '%Y-%m-%dT%H:%M:%SZ')
-        if lastBranchCommit < datetime.datetime.today() - datetime.timedelta(days=args.days_delete):
+        if lastBranchCommit < datetime.datetime.today() - datetime.timedelta(days=int(args.days_delete)):
             branches_to_delete.append(branch)
-        elif lastBranchCommit < datetime.datetime.today() - datetime.timedelta(days=args.days_slack):
+        elif lastBranchCommit < datetime.datetime.today() - datetime.timedelta(days=int(args.days_notify)):
             email = branch['target']['author']['email']
             if email not in slack_reminder:
                 slack_reminder[email] = []
@@ -133,11 +133,11 @@ def send_slack_message(args, slack_reminder):
                     branch_url = "https://github.com/"+args.gh_repo+"/compare/main..."
                     branches = [branch_url + branch['name'] + '\n' for branch in slack_reminder[user_email]]
                     delete_branch_msg = "git push origin --delete " + ' '.join([branch['name'] for branch in slack_reminder[user_email]])
-                    message = "Hi! The following branches are more than %s days old:\n%s" % (''.join(branches), args.days_slack)
+                    message = "Hi! The following branches are more than %s days old:\n%s" % (''.join(branches), args.days_notify)
                     message+="If you would like to keep the branch alive please rename the branch with the prefix `keep-alive-`.\n"
                     message+="You can do this by running\n`git push origin origin/old_name:refs/heads/keep-alive-old_name && git push origin :old_name`\n"
                     message+=f"Otherwise please run `{delete_branch_msg}` to delete the branches.\n"
-                    message+=f"If no action is taken, the {'branch' if len(branches)>1 else 'branches' } will be deleted in another %s days." % (args.days_delete-args.days_slack)
+                    message+=f"If no action is taken, the {'branch' if len(branches)>1 else 'branches' } will be deleted in another %s days." % (int(args.days_delete)-int(args.days_notify))
                     headers = {'Authorization': f'Bearer {args.slack_token}'}
                     data = {'text': message, 'channel': slack_user_id}
                     res = requests.post(
@@ -158,9 +158,9 @@ def parse_args():
     parser.add_argument(
         '--slack-token', help='Slack token', default=os.getenv('SLACK_TOKEN'))
     parser.add_argument(
-        '--days-delete', type=int, help='Number of days to delete')
+        '--days-delete', help='Number of days to delete')
     parser.add_argument(
-        '--days-notify', type=int, help='Number of days to notify')
+        '--days-notify', help='Number of days to notify')
     parser.add_argument('--verbose', help='Verbose output', action='store_true')
 
     args = parser.parse_args()

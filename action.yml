@@ -11,11 +11,13 @@ inputs:
   days-to-notify:
     description: "Number of minimum days to send slack notification"
     required: true
-    default: "60"
+    default: 30
+    type: number
   days-to-delete:
     description: "Number of minimum days to delete branch"
     required: true
-    default: "75"
+    default: 60
+    type: number
 runs:
   using: "composite"
   steps:
